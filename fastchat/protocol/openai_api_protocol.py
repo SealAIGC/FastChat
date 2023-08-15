@@ -60,6 +60,8 @@ class ChatCompletionRequest(BaseModel):
     presence_penalty: Optional[float] = 0.0
     frequency_penalty: Optional[float] = 0.0
     user: Optional[str] = None
+    agent: Optional[str] = None
+    source: Optional[str] = None
 
 
 class ChatMessage(BaseModel):

@@ -69,6 +69,7 @@ conv_template_map = {}
 class AppSettings(BaseSettings):
     # The address of the model controller.
     controller_address: str = "http://localhost:21001"
+    agent_address: str = "http://localhost:5011"
     api_keys: Optional[List[str]] = None
 
 
@@ -158,6 +159,41 @@ async def check_length(request, prompt, max_tokens):
         )
     else:
         return None
+
+
+async def check_langchain(request):
+    agent_address = app_settings.agent_address
+    ret = None
+    if request.agent != "SealGPT":
+        async with httpx.AsyncClient() as client:
+            system_message = None
+            user_last_content = None
+
+            for i, message in enumerate(request.messages):
+                msg_role = message["role"]
+                msg_content = message["content"]
+                if msg_role == "system":
+                    system_message = (i, msg_content)
+                elif msg_role == "user":
+                    user_last_content = (i, msg_content)
+                else:
+                    raise ValueError(f"Unknown role: {msg_role}")
+
+            req_json = {
+                "system": system_message[1],
+                "query": user_last_content[1],
+                "agent": request.agent,
+            }
+
+            ret_text = await client.post(agent_address + "/agent", json=req_json)
+            resp_json = ret_text.json()
+
+            request.messages[system_message[0]]["content"] = resp_json["system"]
+            request.messages[user_last_content[0]]["content"] = resp_json["query"]
+
+            request.source = resp_json["source"]
+
+    return request, ret
 
 
 def check_requests(request) -> Optional[JSONResponse]:
@@ -348,6 +384,9 @@ async def create_chat_completion(request: ChatCompletionRequest):
     error_check_ret = check_requests(request)
     if error_check_ret is not None:
         return error_check_ret
+    request, error_check_ret = await check_langchain(request)
+    if error_check_ret is not None:
+        return error_check_ret
 
     gen_params = await get_gen_params(
         request.model,
@@ -366,9 +405,14 @@ async def create_chat_completion(request: ChatCompletionRequest):
         return error_check_ret
 
     if request.stream:
-        generator = chat_completion_stream_generator(
-            request.model, gen_params, request.n
-        )
+        async def stream_generator_with_source():
+            yield f"data: {json.dumps({'source': request.source})}\n\n"
+            async for chunk in chat_completion_stream_generator(
+                request.model, gen_params, request.n
+            ):
+                yield chunk
+                
+        generator = stream_generator_with_source()
         return StreamingResponse(generator, media_type="text/event-stream")
 
     choices = []
@@ -788,6 +832,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--controller-address", type=str, default="http://localhost:21001"
     )
+    parser.add_argument("--agent-address", type=str, default="http://localhost:5011")
     parser.add_argument(
         "--allow-credentials", action="store_true", help="allow credentials"
     )
@@ -815,6 +860,7 @@ if __name__ == "__main__":
         allow_headers=args.allowed_headers,
     )
     app_settings.controller_address = args.controller_address
+    app_settings.agent_address = args.agent_address
     app_settings.api_keys = args.api_keys
 
     logger.info(f"args: {args}")
