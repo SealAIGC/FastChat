@@ -406,12 +406,12 @@ async def create_chat_completion(request: ChatCompletionRequest):
 
     if request.stream:
         async def stream_generator_with_source():
-            yield f"data: {json.dumps({'source': request.source})}\n\n"
+            # yield f"data: {json.dumps({'source': request.source})}\n\n"
             async for chunk in chat_completion_stream_generator(
                 request.model, gen_params, request.n
             ):
                 yield chunk
-                
+
         generator = stream_generator_with_source()
         return StreamingResponse(generator, media_type="text/event-stream")
 
