@@ -176,6 +176,8 @@ async def check_langchain(request):
                     system_message = (i, msg_content)
                 elif msg_role == "user":
                     user_last_content = (i, msg_content)
+                elif msg_role == "assistant":
+                    pass
                 else:
                     raise ValueError(f"Unknown role: {msg_role}")
 
