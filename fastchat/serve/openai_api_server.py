@@ -180,6 +180,11 @@ async def check_langchain(request):
                     pass
                 else:
                     raise ValueError(f"Unknown role: {msg_role}")
+                
+            if system_message is None or user_last_content is None:
+                logger.error("system_message or user_last_content is None")
+                logger.info("fallback to default agent")
+                return request, ret
 
             req_json = {
                 "system": system_message[1],
