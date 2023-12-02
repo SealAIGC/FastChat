@@ -19,6 +19,7 @@ from fastapi import Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.security.http import HTTPAuthorizationCredentials, HTTPBearer
+from fastchat.serve.router.router_processer import routerProcessor
 import httpx
 from pydantic import BaseSettings
 import shortuuid
@@ -382,6 +383,47 @@ async def show_available_models():
     return ModelList(data=model_cards)
 
 
+async def process_completions(request: ChatCompletionRequest, gen_params: Dict[str, Any]):
+    """
+    This function is for processing the completions request follow our design 
+    """
+    yield f'''data: {json.dumps({
+        "id": "",
+        "model": request.model,
+        "choices": [
+            {
+                "index": 0,
+                "delta": {
+                    "role": "agent",
+                    "content": request.source
+                },
+                "finish_reason": None
+            }
+        ]
+    })}\n\n'''
+    processor = routerProcessor(request.messages, gen_params)
+    processor.retrieve_routes(request.agent)
+    async for chunk in processor.process():
+        yield chunk
+
+    new_gen_params = await get_gen_params(
+        request.model,
+        processor.chat_message,
+        temperature=request.temperature,
+        top_p=request.top_p,
+        max_tokens=request.max_tokens,
+        echo=False,
+        stream=request.stream,
+        stop=request.stop,
+    )
+
+    async for chunk in chat_completion_stream_generator(
+        request.model, new_gen_params, request.n
+    ):
+        
+        yield chunk
+
+
 @app.post("/v1/chat/completions", dependencies=[Depends(check_api_key)])
 async def create_chat_completion(request: ChatCompletionRequest):
     """Creates a completion for the chat message"""
@@ -411,29 +453,12 @@ async def create_chat_completion(request: ChatCompletionRequest):
     if error_check_ret is not None:
         return error_check_ret
 
+    # In our api we only implement stream version
     if request.stream:
-        async def stream_generator_with_source():
-            yield f'''data: {json.dumps({
-                "id": "",
-                "model": request.model,
-                "choices": [
-                    {
-                        "index": 0,
-                        "delta": {
-                            "role": "agent",
-                            "content": request.source
-                        },
-                        "finish_reason": None
-                    }
-                ]
-            })}\n\n'''
-            async for chunk in chat_completion_stream_generator(
-                request.model, gen_params, request.n
-            ):
-                yield chunk
-
-        generator = stream_generator_with_source()
+        generator = process_completions(request, gen_params)
         return StreamingResponse(generator, media_type="text/event-stream")
+
+    raise Exception("Not Implement Non-Streamming API")
 
     choices = []
     chat_completions = []

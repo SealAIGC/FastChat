@@ -10,7 +10,7 @@ services:
         "-m",
         "fastchat.serve.openai_api_server",
         "--controller-address",
-        "http://controller.seal3.io",
+        "http://controller.spearlink.seal3.io",
         "--agent-address",
         "https://agent.seal3.io",
         "--host",
