@@ -15,7 +15,7 @@ class toolProcessor:
 
         # setup record
         self.recording = False
-        self.tool_message = str()
+        self.output_message = str()
 
     
     def retrieve_function(self, function_name: str) -> dict:
@@ -24,25 +24,34 @@ class toolProcessor:
 
 
     def extraxt_result(self) -> str:
+        tool_message = self.output_message[self.output_message.find("<tool>"):self.output_message.find("</tool>")+7]
+
         pattern = re.compile(r'\{(?:[^{}]|(?R))*\}')
-        matches = pattern.findall(self.tool_message)
+        matches = pattern.findall(tool_message)
 
         return matches[0]
             
 
     def add_message(self, message: str):
-        message.replace("data: ", "", 1)
+        message = message.replace("data: ", "", 1)
+        if "[DONE]" in message:
+            return
 
-        if "<tool>" in message:
-            self.recording = True
-            self.tool_message = str()
+        template = message = json.loads(message)
 
-        if self.recording:
-            self.tool_message += message
+        if 'content' not in message['choices'][0]['delta']:
+            return
+        
+        message = message['choices'][0]['delta']['content']
+        self.output_message += message
 
-        if "</tool>" in message:
+        if "</tool>" in self.output_message:
             self.recording = False
-            return "data: " + self.process()
+            response = json.loads(self.extraxt_result())
+            response['result'] = "<tool>" + self.process() + "</tool>"
+            template['choices'][0]['delta']['content'] = response
+            self.output_message = str()
+            return "data: " + json.dumps(template) + "\n\n"
         
     
     def send_request(self, function: dict, params: dict) -> dict:
@@ -56,6 +65,7 @@ class toolProcessor:
 
     def process(self) -> str:
         generate_call_info = self.extraxt_result()
+
         call_info = json.loads(generate_call_info)
         function_name = call_info["function_name"]
         params = call_info["argument"]
