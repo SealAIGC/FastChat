@@ -20,6 +20,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.security.http import HTTPAuthorizationCredentials, HTTPBearer
 from fastchat.serve.router.router_processer import routerProcessor
+from fastchat.serve.tool.tool_processor import toolProcessor
 import httpx
 from pydantic import BaseSettings
 import shortuuid
@@ -417,11 +418,14 @@ async def process_completions(request: ChatCompletionRequest, gen_params: Dict[s
         stop=request.stop,
     )
 
+    tool_processor = toolProcessor()
     async for chunk in chat_completion_stream_generator(
         request.model, new_gen_params, request.n
     ):
-        
         yield chunk
+        tool = tool_processor.add_message(chunk)
+        if tool is not None:
+            yield tool
 
 
 @app.post("/v1/chat/completions", dependencies=[Depends(check_api_key)])
