@@ -108,14 +108,28 @@ class routerProcessor:
             
             completion = response.json()
             return completion
+        
+    def pack_message(self, message: str) -> str:
+        return f"""data: {
+            json.dumps({
+                "choices": [
+                    {
+                        "delta": {
+                            "content": message,
+                            "role": "assistant"
+                        }
+                    }
+                ]
+            })
+        }\n\n"""
 
     async def process(self) -> Generator[str, Any, None]:
         if not self.isRAG:
             return
         
-        yield f"""data: <SYSTEM>{
+        yield self.pack_message(f"""<SYSTEM>{
                 {"task":"RAG","params":{"message": f"start {self.app['AgentName']} RAG"}}
-            }</SYSTEM>\n\n"""
+            }</SYSTEM>""")
 
         for router in self.routers:
             router_app = self.collection.find_one({"AgentName": router['name']})
@@ -143,13 +157,13 @@ class routerProcessor:
 
             action_message = self.do_action(router_app['api_parameter']['result_and_action'], result)
 
-            yield f"""data: <SYSTEM>{
+            yield self.pack_message(f"""<SYSTEM>{
                 {"task":"agentLinkAction","params":{"message": f"{action_message}"}}
-            }</SYSTEM>\n\n"""
+            }</SYSTEM>""")
 
-        yield f"""data: <SYSTEM>{
+        yield self.pack_message(f"""<SYSTEM>{
             {"task":"done","params":{"message":""}}
-        }</SYSTEM>\n\n"""
+        }</SYSTEM>""")
 
     def retrieve_routes(self, app_name: str) -> None:
         self.app = self.collection.find_one({"AgentName": app_name})

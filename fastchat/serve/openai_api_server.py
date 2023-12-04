@@ -389,11 +389,8 @@ async def process_completions(request: ChatCompletionRequest, gen_params: Dict[s
     This function is for processing the completions request follow our design 
     """
     yield f'''data: {json.dumps({
-        "id": "",
-        "model": request.model,
         "choices": [
             {
-                "index": 0,
                 "delta": {
                     "role": "agent",
                     "content": request.source
