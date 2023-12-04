@@ -182,7 +182,7 @@ async def check_langchain(request):
                     pass
                 else:
                     raise ValueError(f"Unknown role: {msg_role}")
-                
+
             if system_message is None or user_last_content is None:
                 logger.error("system_message or user_last_content is None")
                 logger.info("fallback to default agent")
@@ -303,7 +303,8 @@ async def get_gen_params(
                 raise ValueError(f"Unknown role: {msg_role}")
 
         # Add a blank message for the assistant.
-        conv.append_message(conv.roles[1], None)
+        if conv.messages[-1][0] != conv.roles[1]:
+            conv.append_message(conv.roles[1], None)
         prompt = conv.get_prompt()
 
     if max_tokens is None:
@@ -384,11 +385,13 @@ async def show_available_models():
     return ModelList(data=model_cards)
 
 
-async def process_completions(request: ChatCompletionRequest, gen_params: Dict[str, Any]):
+async def process_completions(
+    request: ChatCompletionRequest, gen_params: Dict[str, Any]
+):
     """
-    This function is for processing the completions request follow our design 
+    This function is for processing the completions request follow our design
     """
-    yield f'''data: {json.dumps({
+    yield f"""data: {json.dumps({
         "choices": [
             {
                 "delta": {
@@ -398,13 +401,13 @@ async def process_completions(request: ChatCompletionRequest, gen_params: Dict[s
                 "finish_reason": None
             }
         ]
-    })}\n\n'''
+    })}\n\n"""
     processor = routerProcessor(request.messages, gen_params)
     processor.retrieve_routes(request.agent)
     async for chunk in processor.process():
         yield chunk
 
-    new_gen_params = await get_gen_params(
+    gen_params = await get_gen_params(
         request.model,
         processor.chat_message,
         temperature=request.temperature,
@@ -415,14 +418,32 @@ async def process_completions(request: ChatCompletionRequest, gen_params: Dict[s
         stop=request.stop,
     )
 
-    tool_processor = toolProcessor()
-    async for chunk in chat_completion_stream_generator(
-        request.model, new_gen_params, request.n
-    ):
+    tool_processor = toolProcessor(processor.chat_message)
+    chunk_generator = chat_completion_stream_generator(
+        request.model, gen_params, request.n
+    )
+    while (chunk := await anext(chunk_generator, None)) is not None:
         yield chunk
+
         tool = tool_processor.add_message(chunk)
         if tool is not None:
             yield tool
+
+            gen_params = await get_gen_params(
+                request.model,
+                tool_processor.chat_message,
+                temperature=request.temperature,
+                top_p=request.top_p,
+                max_tokens=request.max_tokens,
+                echo=False,
+                stream=request.stream,
+                stop=request.stop,
+            )
+
+            del chunk_generator
+            chunk_generator = chat_completion_stream_generator(
+                request.model, gen_params, request.n
+            )
 
 
 @app.post("/v1/chat/completions", dependencies=[Depends(check_api_key)])
