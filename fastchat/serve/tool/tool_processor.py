@@ -61,7 +61,7 @@ class toolProcessor:
             template["choices"][0]["delta"]["content"] = "<tool>" + json.dumps(response) + "</tool>"
 
             self.chat_message[-1]["content"] = self.chat_message[-1]["content"].replace(
-                self.tool_message, response["result"]
+                self.tool_message, json.loads(response["result"])['patientInfo']
             )
             self.last_check_index = len(self.chat_message[-1]["content"])
 
