@@ -303,8 +303,7 @@ async def get_gen_params(
                 raise ValueError(f"Unknown role: {msg_role}")
 
         # Add a blank message for the assistant.
-        if conv.messages[-1][0] != conv.roles[1]:
-            conv.append_message(conv.roles[1], None)
+        conv.append_message(conv.roles[1], None)
         prompt = conv.get_prompt()
 
     if max_tokens is None:

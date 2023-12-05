@@ -49,13 +49,13 @@ class routerProcessor:
     
     def build_prompt(self, format: str, keyword: str, prompt: str, messages: dict) -> str:
         for message in messages:
-            prompt += f"""\n\n<INPUT>{json.dumps(
+            prompt += f""" USER: <INPUT>{json.dumps(
                 {
                     keyword: message['content']
                 }
             )}</INPUT>"""
 
-        return prompt
+        return prompt + " ASSISTANT:"
     
     def extraxt_result(self, format: str, keyword: str, response: dict) -> str:
         response = response['text']

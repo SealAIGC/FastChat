@@ -18,8 +18,8 @@ class toolProcessor:
 
         # setup chat message
         self.chat_message = chat_message
-        self.last_check_index = 0
 
+        # init vars
         self.tool_message = None
 
     def retrieve_function(self, function_name: str) -> dict:
@@ -54,16 +54,18 @@ class toolProcessor:
                 "content"
             ]
 
-        if "</tool>" in self.chat_message[-1]["content"][self.last_check_index :]:
+        if "</tool>" in self.chat_message[-1]["content"]:
             response = self.extraxt_result()
 
             response["result"] = self.process()
             template["choices"][0]["delta"]["content"] = "<tool>" + json.dumps(response) + "</tool>"
 
             self.chat_message[-1]["content"] = self.chat_message[-1]["content"].replace(
-                self.tool_message, json.loads(response["result"])['patientInfo']
+                self.tool_message, ""
             )
-            self.last_check_index = len(self.chat_message[-1]["content"])
+            self.chat_message.append(
+                {"role": "user", "content": json.loads(response["result"])['patientInfo']}
+            )
 
             return "data: " + json.dumps(template) + "\n\n"
 
