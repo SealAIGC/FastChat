@@ -4,7 +4,7 @@ services:
     build: .
     ports:
       - "8000:8000"
-    entrypoint: ["python3.9"]
+    entrypoint: ["python3.11"]
     command:
       [
         "-m",
@@ -22,6 +22,6 @@ services:
     build: .
     ports:
       - "5011:5011"
-    entrypoint: ["python3.9"]
+    entrypoint: ["python3.11"]
     command:
       ["-m", "fastchat.serve.controller", "--host", "0.0.0.0", "--port", "5011"]
