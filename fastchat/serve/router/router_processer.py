@@ -49,7 +49,7 @@ class routerProcessor:
     
     def build_prompt(self, format: str, keyword: str, prompt: str, messages: dict) -> str:
         for message in messages:
-            prompt += f"""<INPUT>{json.dumps(
+            prompt += f"""\n\n<INPUT>{json.dumps(
                 {
                     keyword: message['content']
                 }
@@ -61,7 +61,7 @@ class routerProcessor:
         response = response['text']
 
         pattern = re.compile(r'\{(?:[^{}]|(?R))*\}')
-        matches = pattern.findall(response)
+        matches = pattern.findall(response[response.find("<RESULT>") : response.find("</RESULT>") + 9])
 
         for match in matches:
             match = json.loads(match)
