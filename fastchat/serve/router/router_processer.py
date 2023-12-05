@@ -134,6 +134,10 @@ class routerProcessor:
         for router in self.routers:
             router_app = self.collection.find_one({"AgentName": router['name']})
 
+            yield self.pack_message(f"""<SYSTEM>{
+                {"task":"agentLinkAction","params":{"message": f"Start " + router['name']}}
+            }</SYSTEM>""")
+
             prompt, params = self.build_params(router_app['Parameter'])
 
             query_data = self.build_data(router['input'])
@@ -158,7 +162,7 @@ class routerProcessor:
             action_message = self.do_action(router_app['api_parameter']['result_and_action'], result)
 
             yield self.pack_message(f"""<SYSTEM>{
-                {"task":"agentLinkAction","params":{"message": f"{action_message}"}}
+                {"task":"agentLinkAction","params":{"message": f"{response}"}}
             }</SYSTEM>""")
 
         yield self.pack_message(f"""<SYSTEM>{
