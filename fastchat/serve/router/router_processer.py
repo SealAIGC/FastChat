@@ -161,8 +161,9 @@ class routerProcessor:
 
             action_message = self.do_action(router_app['api_parameter']['result_and_action'], result)
 
+            return_message = response['text'].replace("\"", "\\\"")
             yield self.pack_message(f"""<SYSTEM>{
-                {"task":"agentLinkAction","params":{"message": response['text'].replace("\"", "\\\"")}}}
+                {"task":"agentLinkAction","params":{"message": return_message}}
             }</SYSTEM>""")
 
         yield self.pack_message(f"""<SYSTEM>{
