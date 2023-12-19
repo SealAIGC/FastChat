@@ -21,9 +21,15 @@ class toolProcessor:
 
         # init vars
         self.tool_message = None
+        self.extract_key = None
+        self.append_method = None
+        self.retry=3 # todo: add retry mechanism
+
 
     def retrieve_function(self, function_name: str) -> dict:
         function = self.collection.find_one({"name": function_name})
+        self.extract_key = function['execute']['extract_key']
+        self.append_method = function['execute']['append_method']
         return function
 
     def extraxt_result(self) -> str:
@@ -60,12 +66,17 @@ class toolProcessor:
             response["result"] = self.process()
             template["choices"][0]["delta"]["content"] = "<tool>" + json.dumps(response) + "</tool>"
 
-            self.chat_message[-1]["content"] = self.chat_message[-1]["content"].replace(
-                self.tool_message, ""
-            )
-            self.chat_message.append(
-                {"role": "user", "content": json.loads(response["result"])['patientInfo']}
-            )
+            if self.append_method == "APPEND_ASSISTENT":
+                self.chat_message[-1]["content"] = self.chat_message[-1]["content"].replace(
+                    self.tool_message, "" 
+                )
+                # 將self.chat_message[-1]["content"]重新送到worker
+                self.chat_message[-1]["content"] += json.loads(response["result"])[self.extract_key]
+
+            if self.append_method == "APPEND_USER":
+                self.chat_message.append(
+                    {"role": "user", "content": json.loads(response["result"])[self.extract_key]} 
+                )
 
             return "data: " + json.dumps(template) + "\n\n"
 
