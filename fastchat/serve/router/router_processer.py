@@ -165,10 +165,10 @@ class routerProcessor:
             yield self.pack_message(f"""<SYSTEM>{
                 {"task":"agentLinkAction","params":{"message": return_message}}
             }</SYSTEM>""")
-
-        yield self.pack_message(f"""<SYSTEM>{
-            {"task":"done","params":{"message":""}}
-        }</SYSTEM>""")
+        if self.isRAG['RAG'] == True or self.routers.length > 0:
+            yield self.pack_message(f"""<SYSTEM>{
+                {"task":"done","params":{"message":""}}
+            }</SYSTEM>""")
 
     def retrieve_routes(self, app_name: str) -> None:
         self.app = self.collection.find_one({"AgentName": app_name})
