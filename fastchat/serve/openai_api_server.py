@@ -166,7 +166,7 @@ async def check_length(request, prompt, max_tokens):
 async def check_langchain(request):
     agent_address = app_settings.agent_address
     ret = None
-    if request.isRAG.RAG != True:
+    if request.isRAG['RAG'] != True:
         async with httpx.AsyncClient() as client:
             system_message = None
             user_last_content = None

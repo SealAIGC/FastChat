@@ -126,7 +126,7 @@ class routerProcessor:
     async def process(self) -> Generator[str, Any, None]:
         if not self.isRAG:
             return
-        if self.isRAG.RAG == True:
+        if self.isRAG['RAG'] == True:
             yield self.pack_message(f"""<SYSTEM>{
                     {"task":"RAG","params":{"message": f"start {self.app['AgentName']} RAG"}}
                 }</SYSTEM>""")
