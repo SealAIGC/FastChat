@@ -48,10 +48,7 @@ class UsageInfo(BaseModel):
     completion_tokens: Optional[int] = 0
 
 
-class RAGRequest(BaseModel):
-    RAG: bool
-    API: bool
-    Recommend: bool
+
 
 class ChatCompletionRequest(BaseModel):
     model: str
@@ -67,7 +64,7 @@ class ChatCompletionRequest(BaseModel):
     user: Optional[str] = None
     agent: Optional[str] = None
     source: Optional[str] = None
-    isRAG: Optional[RAGRequest] = None
+    isRAG: Optional[Dict[str, bool]] = None
 
 class ChatMessage(BaseModel):
     role: str
