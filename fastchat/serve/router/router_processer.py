@@ -165,7 +165,7 @@ class routerProcessor:
             yield self.pack_message(f"""<SYSTEM>{
                 {"task":"agentLinkAction","params":{"message": return_message}}
             }</SYSTEM>""")
-        if self.isRAG['RAG'] == True or self.routers.length > 0:
+        if self.isRAG['RAG'] == True or len(self.routers) > 0:
             yield self.pack_message(f"""<SYSTEM>{
                 {"task":"done","params":{"message":""}}
             }</SYSTEM>""")
