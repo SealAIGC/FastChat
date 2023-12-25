@@ -172,7 +172,8 @@ class routerProcessor:
 
     def retrieve_routes(self, app_name: str) -> None:
         self.app = self.collection.find_one({"AgentName": app_name})
-        self.isRAG = self.app['isRAG']
+        if self.app['isRAG'] is not None:
+            self.isRAG = self.app['isRAG']
         self.routers = self.app['routers']
 
     def __del__(self) -> None:

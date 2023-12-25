@@ -402,7 +402,8 @@ async def process_completions(
         ]
     })}\n\n"""
     processor = routerProcessor(request.messages, gen_params)
-    processor.retrieve_routes(request.agent)
+    if request.isRAG is not None:
+        processor.retrieve_routes(request.agent)
     async for chunk in processor.process():
         yield chunk
 
@@ -454,8 +455,6 @@ async def create_chat_completion(request: ChatCompletionRequest):
     error_check_ret = check_requests(request)
     if error_check_ret is not None:
         return error_check_ret
-    print(request)
-    print(request.isRAG)
     if request.isRAG is not None: 
         request, error_check_ret = await check_langchain(request)
         if error_check_ret is not None:
