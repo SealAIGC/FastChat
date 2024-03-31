@@ -12,7 +12,7 @@ services:
         "--controller-address",
         "http://controller.spearlink.seal3.io",
         "--agent-address",
-        "https://agent.seal3.io",
+        "https://agentkb.unieai.com",
         "--host",
         "0.0.0.0",
         "--port",

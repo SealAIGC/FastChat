@@ -192,13 +192,11 @@ async def check_search(request):
                 "system": system_message[1],
                 "query": user_last_content[1],
                 "agent": request.agent,
-                "DB_name":request.db_name
+		"index": request.index,
             }
 
             ret_text = await client.post(agent_address + "/rag", json=req_json) #/rag
             resp_json = ret_text.json()
-
-            print(resp_json)
 
             request.messages[system_message[0]]["content"] = resp_json["system"]
             request.messages[user_last_content[0]]["content"] = resp_json["query"]

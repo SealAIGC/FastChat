@@ -65,6 +65,7 @@ class ChatCompletionRequest(BaseModel):
     agent: Optional[str] = None
     source: Optional[str] = None
     isRAG: Optional[Dict[str, bool]] = None
+    db_name: Optional[list]=[]
 
 class ChatMessage(BaseModel):
     role: str
